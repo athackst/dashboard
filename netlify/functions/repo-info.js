@@ -10,9 +10,11 @@ exports.handler = async () => {
 
     // Set headers to include the access token
     const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28"
+        'Access-Control-Allow-Origin': 'https://www.althack.dev', // Allow requests from www.althack.dev
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
     };
 
     // Get the list of repositories for the user

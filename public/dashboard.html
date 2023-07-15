@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GitHub Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <table id="repositories" class="table align-middle mb-0 col-md-12">
+        <thead class="color-bg-subtle border-top">
+            <tr>
+                <th class="m-2 p-2">Repository Name</th>
+                <th class="m-2 p-2" colspan="2" scope="colgroup">Pull Requests</th>
+                <th class="m-2 p-2" colspan="2" scope="colgroup">Issues</th>
+            </tr>
+        </thead>
+        <tbody id="repository-data">
+            <!-- Repository data will be dynamically populated here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fetch repository data from the serverless function
+        fetch('/.netlify/functions/repo-info')
+            .then(response => response.json())
+            .then(data => {
+                const repositoryData = document.getElementById('repository-data');
+
+                data.forEach(repository => {
+                    const row = document.createElement('tr');
+                    row.classList.add('border-top');
+
+                    const repositoryNameCell = document.createElement('td');
+                    repositoryNameCell.classList.add('m-2', 'p-2');
+                    const repositoryLink = document.createElement('a');
+                    repositoryLink.href = repository.html_url;
+                    repositoryLink.textContent = repository.name;
+                    repositoryNameCell.appendChild(repositoryLink);
+                    row.appendChild(repositoryNameCell);
+
+                    const pullRequestsCell = document.createElement('td');
+                    pullRequestsCell.classList.add('m-2', 'p-2', 'text-right');
+                    if (repository.pull_requests === 0) {
+                        const noneSpan = document.createElement('span');
+                        noneSpan.classList.add('State', 'State--draft');
+                        noneSpan.textContent = 'None';
+                        pullRequestsCell.appendChild(noneSpan);
+                    } else {
+                        const openSpan = document.createElement('span');
+                        openSpan.classList.add('State', 'State--open');
+                        openSpan.innerHTML = `<img src="path/to/git-pull-request-icon.png" height="16" fill="#ffffff"> ${repository.pull_requests} Open`;
+                        pullRequestsCell.appendChild(openSpan);
+                    }
+                    row.appendChild(pullRequestsCell);
+
+                    const pullRequestsButtonCell = document.createElement('td');
+                    pullRequestsButtonCell.classList.add('m-2', 'p-2');
+                    const pullRequestsButton = document.createElement('button');
+                    pullRequestsButton.type = 'button';
+                    pullRequestsButton.classList.add('btn', 'btn-outline');
+                    pullRequestsButton.setAttribute('data-mdb-ripple-color', 'dark');
+                    pullRequestsButton.onclick = () => {
+                        window.open(`${repository.html_url}/pulls`, '_blank');
+                    };
+                    pullRequestsButton.textContent = 'View';
+                    pullRequestsButtonCell.appendChild(pullRequestsButton);
+                    row.appendChild(pullRequestsButtonCell);
+
+                    const issuesCell = document.createElement('td');
+                    issuesCell.classList.add('m-2', 'p-2', 'text-right');
+                    if (repository.issues === 0) {
+                        const noneSpan = document.createElement('span');
+                        noneSpan.classList.add('State', 'State--draft');
+                        noneSpan.textContent = 'None';
+                        issuesCell.appendChild(noneSpan);
+                    } else {
+                        const openSpan = document.createElement('span');
+                        openSpan.classList.add('State', 'State--open');
+                        openSpan.innerHTML = `<img src="path/to/issue-opened-icon.png" height="16" fill="#ffffff"> ${repository.issues} Open`;
+                        issuesCell.appendChild(openSpan);
+                    }
+                    row.appendChild(issuesCell);
+
+                    const issuesButtonCell = document.createElement('td');
+                    issuesButtonCell.classList.add('m-2', 'p-2');
+                    const issuesButton = document.createElement('button');
+                    issuesButton.type = 'button';
+                    issuesButton.classList.add('btn', 'btn-outline');
+                    issuesButton.setAttribute('data-mdb-ripple-color', 'dark');
+                    issuesButton.onclick = () => {
+                        window.open(`${repository.html_url}/issues`, '_blank');
+                    };
+                    issuesButton.textContent = 'View';
+                    issuesButtonCell.appendChild(issuesButton);
+                    row.appendChild(issuesButtonCell);
+
+                    repositoryData.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error(error);
+                // Handle error
+            });
+    </script>
+</body>
+</html>

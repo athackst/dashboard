@@ -13,6 +13,7 @@ exports.handler = async () => {
         'Access-Control-Allow-Origin': '*', // Allow requests from any origin
         'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
         'Content-Type': 'application/json', // Set the content type to application/json
+        'Access-Control-Allow-Credentials': true,
         Authorization: `Bearer ${accessToken}`,
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28"

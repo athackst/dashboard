@@ -10,7 +10,7 @@ exports.handler = async () => {
 
     // Set headers to include the access token
     const headers = {
-        'Access-Control-Allow-Origin': 'https://www.althack.dev', // Allow requests from www.althack.dev
+        'Access-Control-Allow-Origin': '*', // Allow requests from any origin
         'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
         Authorization: `Bearer ${accessToken}`,
         Accept: "application/vnd.github+json",

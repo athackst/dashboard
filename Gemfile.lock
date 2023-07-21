@@ -300,7 +300,6 @@ DEPENDENCIES
   jekyll
   jekyll-github-metadata
   jekyll-octicons
-  jekyll-theme-minimal
   jekyll-theme-primer (~> 0.6.0)
   jemoji
   webrick (~> 1.8)

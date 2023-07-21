@@ -1,7 +1,11 @@
 [build]
-  command = "# no build command"
+  command = "bundle exec jekyll build"
   functions = "netlify/functions"
-  publish = "public"
+  publish = "_site"
 
 [functions]
   node_bundler = "esbuild"
+
+[dev]
+  targetPort = 4001
+  command = "bundle exec jekyll serve --incremental --port 4001"

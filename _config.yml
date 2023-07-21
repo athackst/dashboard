@@ -1,0 +1,17 @@
+theme: jekyll-theme-primer
+
+plugins:
+  - jekyll-octicons
+  - jemoji
+  - dotenv
+
+# Exclude these files from your production _site
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - LICENSE
+  - README.md
+  - vendor
+  - .gitignore
+  - .jekyll-cache/
+  - node_modules/

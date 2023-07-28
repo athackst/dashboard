@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'jekyll'
-gem 'jekyll-theme-primer', '~> 0.6.0'
+gem 'jekyll-theme-profile'
 gem 'bundler'
 
 group :jekyll_plugins do

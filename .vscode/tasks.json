@@ -9,12 +9,17 @@
             "command": "netlify dev",
             "presentation": {
                 "echo": true,
-                "reveal": "silent",
+                "reveal": "always",
                 "focus": false,
                 "panel": "dedicated",
                 "showReuseMessage": true,
                 "clear": true
             }
+        },
+        {
+            "label": "bundle: install",
+            "type": "shell",
+            "command": "bundle install"
         }
     ]
 }

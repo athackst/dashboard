@@ -1,4 +1,8 @@
+![dashboard](/assets/dashboard.png)
+
 # Github Dashboard
+
+Live: [dashboard.althack.dev](https://dashboard.althack.dev)
 
 If you want your own copy to play around with, the quickest way to get it up and running is clicking the Deploy to Netlify button below. It will clone this repository into your own account, and deploy the site to Netlify
 

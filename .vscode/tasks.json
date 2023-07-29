@@ -20,6 +20,11 @@
             "label": "bundle: install",
             "type": "shell",
             "command": "bundle install"
+        },
+        {
+            "label": "bundle: update",
+            "type": "shell",
+            "command": "bundle update"
         }
     ]
 }

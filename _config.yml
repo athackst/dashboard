@@ -1,3 +1,10 @@
 theme: jekyll-theme-profile
 repository: athackst/dashboard
 url: https://dashboard.althack.dev
+
+defaults:
+ -
+  scope:
+    type: pages
+  values:
+    permalink: /:path/:basename:output_ext

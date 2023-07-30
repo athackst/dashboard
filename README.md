@@ -8,10 +8,20 @@ If you want your own copy to play around with, the quickest way to get it up and
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/athackst/dashboard)
 
+You will want to update add  or update your `_config.yml` file with information about your repository
+
+```yaml
+theme: jekyll-theme-profile
+repository: athackst/dashboard # The name of your repository
+url: https://dashboard.althack.dev # The url of your host
+```
+
 You will need to set [environment variables](https://docs.netlify.com/configure-builds/environment-variables/) with your [Github Personal Access Token](https://github.com/settings/tokens) and username.
 
 - `GITHUB_USERNAME`: Your github user name
 - `GITHUB_TOKEN`: Your github token
+- `JEKYLL_ENV`: production
+- `JEKYLL_GITHUB_TOKEN`: Your github token
 
 These allow the dashboard to pull your repository information (read-only public access required).
 

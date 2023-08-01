@@ -20,14 +20,12 @@ You will need to set [environment variables](https://docs.netlify.com/configure-
 
 - `GITHUB_USERNAME`: Your github user name
 - `GITHUB_TOKEN`: Your github token
-- `JEKYLL_ENV`: production
-- `JEKYLL_GITHUB_TOKEN`: Your github token
 
 These allow the dashboard to pull your repository information (read-only public access required).
 
 ## Setup
 
-To run the dashboard locally, you can use the [Visual Studo Code]() with the [Dev Container]() plugin which includes everything you need to get started including the following
+To run the dashboard locally, you can use the [Visual Studo Code](https://code.visualstudio.com/) with the [Dev Container](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) plugin which includes everything you need to get started including the following:
 
 **System Requirements**
 

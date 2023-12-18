@@ -12,7 +12,7 @@ GEM
       minitest (>= 5.1)
       mutex_m
       tzinfo (~> 2.0)
-    addressable (2.8.5)
+    addressable (2.8.6)
       public_suffix (>= 2.0.2, < 6.0)
     afm (0.2.2)
     async (2.6.4)
@@ -21,7 +21,7 @@ GEM
       io-event (~> 1.1)
       timers (~> 4.1)
     base64 (0.2.0)
-    bigdecimal (3.1.4)
+    bigdecimal (3.1.5)
     coffee-script (2.4.1)
       coffee-script-source
       execjs
@@ -217,7 +217,7 @@ GEM
       jekyll (> 3.5, < 5.0)
       jekyll-github-metadata (~> 2.9)
       jekyll-seo-tag (~> 2.0)
-    jekyll-theme-profile (1.8.2)
+    jekyll-theme-profile (1.8.3)
       jekyll (> 3.5, < 5.0)
       jekyll-github-metadata (~> 2.9)
       jekyll-octicons (~> 19.4)

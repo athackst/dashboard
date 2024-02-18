@@ -33,10 +33,10 @@ const getCombinedRunState = (checkRuns) => {
   const conclusionStates = {
     "failure": 7,
     "cancelled": 6,
-    "skipped": 5,
-    "timed_out": 4,
-    "action_required": 3,
-    "success": 2,
+    "timed_out": 5,
+    "action_required": 4,
+    "success": 3,
+    "skipped": 2,
     "neutral": 1,
   };
 

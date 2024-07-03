@@ -46,18 +46,45 @@ const getCombinedRunState = (checkRuns) => {
     "completed": 1,
   };
 
+  // Create a map to store the latest check run for each name
+  const latestCheckRunsMap = new Map();
+
+  // Iterate through each check run
+  for (const checkRun of checkRuns) {
+    // Check if we already have a stored check run for this name
+    if (latestCheckRunsMap.has(checkRun.name)) {
+      // Get the stored check run for this name
+      const storedCheckRun = latestCheckRunsMap.get(checkRun.name);
+      // Compare timestamps to determine the latest one
+      if (new Date(checkRun.started_at) > new Date(storedCheckRun.started_at)) {
+        // Replace the stored check run with the current one if it's newer
+        latestCheckRunsMap.set(checkRun.name, checkRun);
+      }
+    } else {
+      // If no check run is stored for this name, add the current one
+      latestCheckRunsMap.set(checkRun.name, checkRun);
+    }
+  }
+
+  // Now, find the combinedConclusion and combinedStatus from the latest check runs
   let combinedConclusionKey = '';
   let combinedStatusKey = '';
   let combinedConclusionValue = 0;
   let combinedStatusValue = 0;
 
-  for (const checkRun of checkRuns) {
+  // Iterate through the latest check runs map
+  for (const checkRun of latestCheckRunsMap.values()) {
+    console.log('Latest state for action', checkRun.name, 'is', checkRun.conclusion, checkRun.status);
     const conclusionStateValue = conclusionStates[checkRun.conclusion];
     const statusStateValue = statusStates[checkRun.status];
+
+    // Find the maximum conclusion state value
     if (conclusionStateValue > combinedConclusionValue) {
       combinedConclusionValue = conclusionStateValue;
       combinedConclusionKey = checkRun.conclusion;
     }
+
+    // Find the maximum status state value
     if (statusStateValue > combinedStatusValue) {
       combinedStatusValue = statusStateValue;
       combinedStatusKey = checkRun.status;
@@ -77,9 +104,11 @@ const getLatestCommitStatus = async (repoOwner, repoName, branch = 'main') => {
 
   const combinedStatusUrl = `${githubApi}/repos/${repoOwner}/${repoName}/commits/${latestCommitSha}/check-runs`;
   const combinedStatusResponse = await axios.get(combinedStatusUrl, { headers: githubHeaders });
+  console.log('Getting states for', repoName, branch, latestCommitSha);
+
   const checkRunState = getCombinedRunState(combinedStatusResponse.data.check_runs);
 
-  console.log('Latest state for', repoName, branch, latestCommitSha, 'is', checkRunState.combinedConclusion, checkRunState.combinedStatus);
+  console.log('Combined state for', repoName, branch, latestCommitSha, 'is', checkRunState.combinedConclusion, checkRunState.combinedStatus);
 
   return checkRunState;
 };

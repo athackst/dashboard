@@ -10,3 +10,5 @@ vendor
 _site
 
 .jekyll-metadata
+
+deno.lock

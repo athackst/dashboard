@@ -13,6 +13,6 @@ end
 
 group :development do
   gem 'html-proofer'
-  gem "webrick", "~> 1.8"
+  gem "webrick", "~> 1.9"
   gem 'dotenv', '~> 3.1'
 end

@@ -5,10 +5,7 @@ gem 'jekyll-theme-profile'
 gem 'bundler'
 
 group :jekyll_plugins do
-  gem 'github-pages'
-  gem "jekyll-github-metadata"
-  gem "jekyll-octicons"
-  gem "jemoji"
+  gem "jekyll-github-metadata", "=2.13.0"
 end
 
 group :development do

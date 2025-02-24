@@ -7,5 +7,5 @@
   node_bundler = "esbuild"
 
 [dev]
-  targetPort = 4001
-  command = "bundle exec jekyll serve --incremental --port 4001"
+  targetPort = 4003
+  command = "bundle exec jekyll serve --incremental --port 4003"

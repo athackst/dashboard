@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-# Get the current ruby version ansd set .ruby-version
+# Get the current ruby version and set .ruby-version
 ruby_version=$(ruby -v | awk '{print $2}')
 printf %s "$ruby_version" > .ruby-version
 echo "Ruby version $ruby_version set in .ruby-version file"
@@ -13,7 +13,7 @@ fi
 
 # If there's a Gemfile, then run `bundle install`
 # It's assumed that the Gemfile will install Jekyll too
+bundle config set --local path 'vendor/bundle'
 if [ -f Gemfile ]; then
-    bundle config --local path vendor/bundle
     bundle install
 fi

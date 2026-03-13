@@ -151,6 +151,37 @@ const getLatestCommitStatus = async (repoOwner, repoName, branch = 'main') => {
   }
 };
 
+const getLatestReleaseInfo = async (repoOwner, repoName) => {
+  const releasesUrl = `${githubApi}/repos/${repoOwner}/${repoName}/releases`;
+
+  try {
+    const releases = await getPaginatedResults(releasesUrl);
+    const latestRelease = releases.find((release) => !release.draft);
+    const latestDraftRelease = releases.find((release) => release.draft);
+    console.log('Release info for', `${repoOwner}/${repoName}`, {
+      releaseCount: releases.length,
+      latestRelease: latestRelease ? latestRelease.tag_name || latestRelease.name || '' : '',
+      latestDraftRelease: latestDraftRelease ? latestDraftRelease.tag_name || latestDraftRelease.name || '' : ''
+    });
+
+    return {
+      latestRelease: latestRelease ? latestRelease.tag_name || latestRelease.name || '' : '',
+      latestReleaseDate: latestRelease ? latestRelease.published_at || latestRelease.created_at || '' : '',
+      latestDraftRelease: latestDraftRelease ? latestDraftRelease.tag_name || latestDraftRelease.name || '' : ''
+    };
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return {
+        latestRelease: '',
+        latestReleaseDate: '',
+        latestDraftRelease: ''
+      };
+    }
+
+    throw error;
+  }
+};
+
 const shouldIncludeArchivedRepos = (event) => {
   const includeArchived = event.queryStringParameters && event.queryStringParameters.includeArchived;
 
@@ -173,10 +204,11 @@ exports.handler = async (event) => {
         const prsUrl = `${githubApi}/repos/${userName}/${repo.name}/pulls?state=open`;
         const issuesUrl = `${githubApi}/repos/${userName}/${repo.name}/issues?state=open`;
 
-        const [pullRequests, issues, commitStatus] = await Promise.all([
+        const [pullRequests, issues, commitStatus, releaseInfo] = await Promise.all([
           getPaginatedResults(prsUrl),
           getPaginatedResults(issuesUrl),
-          getLatestCommitStatus(userName, repo.name, repo.default_branch)
+          getLatestCommitStatus(userName, repo.name, repo.default_branch),
+          getLatestReleaseInfo(userName, repo.name)
         ]);
 
         const numPullRequests = pullRequests.length;
@@ -188,6 +220,9 @@ exports.handler = async (event) => {
           archived: repo.archived,
           issues: numIssues,
           pull_requests: numPullRequests,
+          latest_release: releaseInfo.latestRelease,
+          latest_release_date: releaseInfo.latestReleaseDate,
+          latest_draft_release: releaseInfo.latestDraftRelease,
           latest_commit_status: commitStatus.combinedStatus,
           latest_commit_conclusion: commitStatus.combinedConclusion
         };
@@ -200,6 +235,9 @@ exports.handler = async (event) => {
           archived: repo.archived,
           issues: 0,
           pull_requests: 0,
+          latest_release: '',
+          latest_release_date: '',
+          latest_draft_release: '',
           latest_commit_status: '',
           latest_commit_conclusion: ''
         };

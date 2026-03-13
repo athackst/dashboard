@@ -85,7 +85,13 @@ const repositories = document.getElementById('repositories');
 repositories.style.display = 'none';
 // Fetch repository data from the serverless function
 fetch('/.netlify/functions/repo-info')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        return response.json();
+    })
     .then(data => {
         const repositoryData = document.getElementById('repository-data');
         const loadingDiv = document.getElementById('loading');
@@ -113,5 +119,5 @@ fetch('/.netlify/functions/repo-info')
         console.error(error);
         // Handle error
         const loadingDiv = document.getElementById('loading');
-        loadingDiv.innerHTML = '{% octicon cloud-offline height:24 %}<p>Error loading data.<\p>';
+        loadingDiv.innerHTML = '{% octicon cloud-offline height:24 %}<p>Error loading data.</p>';
     });

@@ -20,12 +20,28 @@ const responseHeaders = {
   'Access-Control-Allow-Credentials': true
 };
 
-const getDefaultBranch = async (repoOwner, repoName) => {
-  const repoDetailsUrl = `${githubApi}/repos/${repoOwner}/${repoName}`;
-  const repoDetailsResponse = await axios.get(repoDetailsUrl, { headers: githubHeaders });
-  const defaultBranch = repoDetailsResponse.data.default_branch;
-  console.log('Default branch for ', repoDetailsUrl, ' is ', defaultBranch);
-  return defaultBranch;
+const getPaginatedResults = async (url) => {
+  const results = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    const response = await axios.get(url, {
+      headers: githubHeaders,
+      params: {
+        per_page: perPage,
+        page
+      }
+    });
+
+    results.push(...response.data);
+
+    if (response.data.length < perPage) {
+      return results;
+    }
+
+    page += 1;
+  }
 };
 
 const getCombinedRunState = (checkRuns) => {
@@ -98,56 +114,83 @@ const getCombinedRunState = (checkRuns) => {
 };
 
 const getLatestCommitStatus = async (repoOwner, repoName, branch = 'main') => {
-  const commitsUrl = `${githubApi}/repos/${repoOwner}/${repoName}/commits/${branch}`;
-  const commitsResponse = await axios.get(commitsUrl, { headers: githubHeaders });
-  const latestCommitSha = commitsResponse.data.sha;
+  if (!branch) {
+    return {
+      combinedConclusion: '',
+      combinedStatus: ''
+    };
+  }
 
-  const combinedStatusUrl = `${githubApi}/repos/${repoOwner}/${repoName}/commits/${latestCommitSha}/check-runs`;
-  const combinedStatusResponse = await axios.get(combinedStatusUrl, { headers: githubHeaders });
-  console.log('Getting states for', repoName, branch, latestCommitSha);
+  try {
+    const commitsUrl = `${githubApi}/repos/${repoOwner}/${repoName}/commits/${branch}`;
+    const commitsResponse = await axios.get(commitsUrl, { headers: githubHeaders });
+    const latestCommitSha = commitsResponse.data.sha;
 
-  const checkRunState = getCombinedRunState(combinedStatusResponse.data.check_runs);
+    const combinedStatusUrl = `${githubApi}/repos/${repoOwner}/${repoName}/commits/${latestCommitSha}/check-runs`;
+    const combinedStatusResponse = await axios.get(combinedStatusUrl, { headers: githubHeaders });
+    console.log('Getting states for', repoName, branch, latestCommitSha);
 
-  console.log('Combined state for', repoName, branch, latestCommitSha, 'is', checkRunState.combinedConclusion, checkRunState.combinedStatus);
+    const checkRunState = getCombinedRunState(combinedStatusResponse.data.check_runs);
 
-  return checkRunState;
+    console.log('Combined state for', repoName, branch, latestCommitSha, 'is', checkRunState.combinedConclusion, checkRunState.combinedStatus);
+
+    return checkRunState;
+  } catch (error) {
+    if (error.response && (error.response.status === 404 || error.response.status === 409)) {
+      console.warn(`Skipping commit status for ${repoOwner}/${repoName}: ${error.response.status}`);
+      return {
+        combinedConclusion: '',
+        combinedStatus: ''
+      };
+    }
+
+    throw error;
+  }
 };
 
 exports.handler = async () => {
   try {
     // Get the list of repositories for the user
     const reposUrl = `${githubApi}/users/${userName}/repos?type=owner&sort=updated`;
-    const reposResponse = await axios.get(reposUrl, { headers: githubHeaders });
-    const repos = reposResponse.data;
+    const repos = await getPaginatedResults(reposUrl);
 
-    // Fetch repository information for each repository using Promise.all
+    // Fetch repository information for each repository and tolerate partial failures.
     const repoInfoPromises = repos.map(async (repo) => {
-      console.log(`Getting info for ${repo.name}`);
+      try {
+        console.log(`Getting info for ${repo.name}`);
 
-      // Get the number of open pull requests
-      const prsUrl = `${githubApi}/repos/${userName}/${repo.name}/pulls?state=open`;
-      const prsResponse = await axios.get(prsUrl, { headers: githubHeaders });
-      const numPullRequests = prsResponse.data.length;
+        const prsUrl = `${githubApi}/repos/${userName}/${repo.name}/pulls?state=open`;
+        const issuesUrl = `${githubApi}/repos/${userName}/${repo.name}/issues?state=open`;
 
-      // Get the number of open issues (excluding pull requests)
-      const issuesUrl = `${githubApi}/repos/${userName}/${repo.name}/issues?state=open`;
-      const issuesResponse = await axios.get(issuesUrl, { headers: githubHeaders });
-      const numIssues = issuesResponse.data.length - numPullRequests;
+        const [pullRequests, issues, commitStatus] = await Promise.all([
+          getPaginatedResults(prsUrl),
+          getPaginatedResults(issuesUrl),
+          getLatestCommitStatus(userName, repo.name, repo.default_branch)
+        ]);
 
-      // Get the default branch name
-      const defaultBranch = await getDefaultBranch(userName, repo.name);
+        const numPullRequests = pullRequests.length;
+        const numIssues = issues.filter((issue) => !issue.pull_request).length;
 
-      // Get the latest commit status of the default branch
-      const commitStatus = await getLatestCommitStatus(userName, repo.name, defaultBranch);
+        return {
+          name: repo.name,
+          html_url: repo.html_url,
+          issues: numIssues,
+          pull_requests: numPullRequests,
+          latest_commit_status: commitStatus.combinedStatus,
+          latest_commit_conclusion: commitStatus.combinedConclusion
+        };
+      } catch (error) {
+        console.error(`Failed to load repository info for ${repo.name}`, error.message);
 
-      return {
-        name: repo.name,
-        html_url: repo.html_url,
-        issues: numIssues,
-        pull_requests: numPullRequests,
-        latest_commit_status: commitStatus.combinedStatus,
-        latest_commit_conclusion: commitStatus.combinedConclusion
-      };
+        return {
+          name: repo.name,
+          html_url: repo.html_url,
+          issues: 0,
+          pull_requests: 0,
+          latest_commit_status: '',
+          latest_commit_conclusion: ''
+        };
+      }
     });
 
     // Wait for all repository information promises to resolve

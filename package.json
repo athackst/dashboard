@@ -1,9 +1,15 @@
 {
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "dev": "netlify dev"
+  },
   "dependencies": {
     "axios": "^1.4.0",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "netlify-cli": "^17.38.0"
+    "netlify-cli": "17.38.0"
   }
 }

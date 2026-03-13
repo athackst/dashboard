@@ -47,6 +47,12 @@ Then `Ctrl+Shift+P` to open the command pallet and search for `Dev Containers: R
 
 Create a `.env` file to store secrets locally.
 
-Next, run `netlify dev` to start the remote development server.
+Recommended local versions:
+
+- Node `22`
+- Ruby `3.4.9`
+- Bundler `2.6.9`
+
+Next, run `npx netlify dev` to start the local development server.
 
 This will start the client server on [http://localhost:8888](http://localhost:8888)

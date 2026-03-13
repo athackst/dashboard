@@ -17,3 +17,10 @@ bundle config set --local path 'vendor/bundle'
 if [ -f Gemfile ]; then
     bundle install
 fi
+
+# Install Node dependencies for Netlify functions and local tooling.
+if [ -f package-lock.json ]; then
+    npm ci
+elif [ -f package.json ]; then
+    npm install
+fi

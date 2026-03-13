@@ -10,5 +10,7 @@ vendor
 _site
 
 .jekyll-metadata
+.jekyll-cache
+.ruby-lsp
 
 deno.lock

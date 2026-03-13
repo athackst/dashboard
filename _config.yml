@@ -3,6 +3,7 @@ repository: athackst/dashboard
 url: https://dashboard.althack.dev
 baseurl: ""
 repo_info: true
+include_archived_repositories: "false"
 exclude:
   - .netlify
   - node_modules

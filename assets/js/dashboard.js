@@ -82,9 +82,14 @@ function createIcon(name, className) {
 }
 
 const repositories = document.getElementById('repositories');
+const includeArchived = repositories.dataset.includeArchived === 'true';
+const repoInfoUrl = new URL('/.netlify/functions/repo-info', window.location.origin);
 repositories.style.display = 'none';
+
+repoInfoUrl.searchParams.set('includeArchived', String(includeArchived));
+
 // Fetch repository data from the serverless function
-fetch('/.netlify/functions/repo-info')
+fetch(repoInfoUrl)
     .then(response => {
         if (!response.ok) {
             throw new Error(`Request failed with status ${response.status}`);

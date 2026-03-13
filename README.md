@@ -14,6 +14,7 @@ You will want to update add  or update your `_config.yml` file with information 
 theme: jekyll-theme-profile
 repository: athackst/dashboard # The name of your repository
 url: https://dashboard.althack.dev # The url of your host
+include_archived_repositories: "false" # Optional: set to "true" to include archived repositories
 ```
 
 You will need to set [environment variables](https://docs.netlify.com/configure-builds/environment-variables/) with your [Github Personal Access Token](https://github.com/settings/tokens) and username.

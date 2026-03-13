@@ -4,8 +4,9 @@ style: topbar
 title: GitHub Dashboard
 social_image: /assets/dashboard.png
 description: Dashboard to show the state all of my github repositories.
+include_archived: "{{ site.include_archived_repositories | default: 'true' }}"
 ---
-<table id="repositories" class="table mx-auto nowrap">
+<table id="repositories" class="table mx-auto nowrap" data-include-archived="{{ page.include_archived }}">
     <thead class="color-bg-subtle border-top">
         <tr>
             <th class="m-2 p-2">Repository Name</th>

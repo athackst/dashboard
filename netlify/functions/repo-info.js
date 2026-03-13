@@ -151,14 +151,22 @@ const getLatestCommitStatus = async (repoOwner, repoName, branch = 'main') => {
   }
 };
 
-exports.handler = async () => {
+const shouldIncludeArchivedRepos = (event) => {
+  const includeArchived = event.queryStringParameters && event.queryStringParameters.includeArchived;
+
+  return includeArchived === 'true';
+};
+
+exports.handler = async (event) => {
   try {
     // Get the list of repositories for the user
     const reposUrl = `${githubApi}/users/${userName}/repos?type=owner&sort=updated`;
+    const includeArchived = shouldIncludeArchivedRepos(event);
     const repos = await getPaginatedResults(reposUrl);
+    const filteredRepos = includeArchived ? repos : repos.filter((repo) => !repo.archived);
 
     // Fetch repository information for each repository and tolerate partial failures.
-    const repoInfoPromises = repos.map(async (repo) => {
+    const repoInfoPromises = filteredRepos.map(async (repo) => {
       try {
         console.log(`Getting info for ${repo.name}`);
 
@@ -177,6 +185,7 @@ exports.handler = async () => {
         return {
           name: repo.name,
           html_url: repo.html_url,
+          archived: repo.archived,
           issues: numIssues,
           pull_requests: numPullRequests,
           latest_commit_status: commitStatus.combinedStatus,
@@ -188,6 +197,7 @@ exports.handler = async () => {
         return {
           name: repo.name,
           html_url: repo.html_url,
+          archived: repo.archived,
           issues: 0,
           pull_requests: 0,
           latest_commit_status: '',

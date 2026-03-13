@@ -19,41 +19,96 @@ function createRepositoryNameCell(repository) {
     return repositoryNameCell;
 }
 
-// Function to create a cell for pull requests
-function createCountCell(count, icon) {
+// Function to create a linked count cell
+function createCountCell(count, icon, url) {
     const cell = document.createElement('td');
-    cell.classList.add('m-2', 'p-2', 'text-right');
+    cell.classList.add('m-2', 'p-2');
 
     if (count === 0) {
         const noneSpan = document.createElement('span');
-        noneSpan.classList.add('State', 'State--draft');
+        noneSpan.classList.add('color-fg-muted');
         noneSpan.textContent = 'None';
         cell.appendChild(noneSpan);
     } else {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+
         const span = document.createElement('span');
         span.classList.add('State', 'State--open');
         span.innerHTML = `${icon} ${count} Open`;
-        cell.appendChild(span);
+        link.appendChild(span);
+        cell.appendChild(link);
     }
     return cell;
 }
 
-// Function to create a button
-function createButton(text, onClickHandler) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.classList.add('btn', 'btn-outline');
-    button.setAttribute('data-mdb-ripple-color', 'dark');
-    button.textContent = text;
-    button.onclick = onClickHandler;
-    return button;
+function formatReleaseDate(dateString) {
+    if (!dateString) {
+        return '';
+    }
+
+    const date = new Date(dateString);
+
+    if (Number.isNaN(date.getTime())) {
+        return dateString;
+    }
+
+    return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
 }
 
-function createButtonCell(text, onClickHandler) {
-    const buttonCell = document.createElement('td');
-    buttonCell.classList.add('m-2', 'p-2');
-    buttonCell.appendChild(createButton(text, onClickHandler));
-    return buttonCell;
+function createReleaseCell(repository) {
+    const cell = document.createElement('td');
+    cell.classList.add('m-2', 'p-2');
+    const releasesUrl = `${repository.html_url}/releases`;
+
+    if (!repository.latest_release && !repository.latest_draft_release) {
+        const noneSpan = document.createElement('span');
+        noneSpan.classList.add('color-fg-muted');
+        noneSpan.textContent = 'None';
+        cell.appendChild(noneSpan);
+        return cell;
+    }
+
+    if (repository.latest_release) {
+        const releaseLink = document.createElement('a');
+        releaseLink.href = releasesUrl;
+        releaseLink.target = '_blank';
+        releaseLink.rel = 'noreferrer';
+
+        const releaseSpan = document.createElement('span');
+        releaseSpan.classList.add('State', 'State--merged', 'mr-2');
+        releaseSpan.textContent = repository.latest_release;
+        releaseLink.appendChild(releaseSpan);
+        cell.appendChild(releaseLink);
+    }
+
+    if (repository.latest_draft_release) {
+        const draftLink = document.createElement('a');
+        draftLink.href = releasesUrl;
+        draftLink.target = '_blank';
+        draftLink.rel = 'noreferrer';
+
+        const draftSpan = document.createElement('span');
+        draftSpan.classList.add('State', 'State--draft', 'mr-2');
+        draftSpan.textContent = repository.latest_draft_release;
+        draftLink.appendChild(draftSpan);
+        cell.appendChild(draftLink);
+    }
+
+    if (repository.latest_release_date) {
+        const dateSpan = document.createElement('span');
+        dateSpan.classList.add('color-fg-muted');
+        dateSpan.textContent = formatReleaseDate(repository.latest_release_date);
+        cell.appendChild(dateSpan);
+    }
+
+    return cell;
 }
 
 // Function to create an icon based on the latest commit status
@@ -110,12 +165,13 @@ fetch(repoInfoUrl)
         data.forEach(repository => {
             const row = document.createElement('tr');
             row.classList.add('border-top');
+            const pullRequestsUrl = `${repository.html_url}/pulls`;
+            const issuesUrl = `${repository.html_url}/issues`;
 
             row.appendChild(createRepositoryNameCell(repository));
-            row.appendChild(createCountCell(repository.pull_requests, '{% octicon git-pull-request height: 16 fill:"#ffff" %}'));
-            row.appendChild(createButtonCell('View', () => window.open(`${repository.html_url}/pulls`, '_blank')));
-            row.appendChild(createCountCell(repository.issues, '{% octicon issue-opened height: 16 fill:"#ffff" %}'));
-            row.appendChild(createButtonCell('View', () => window.open(`${repository.html_url}/issues`, '_blank')));
+            row.appendChild(createCountCell(repository.pull_requests, '{% octicon git-pull-request height: 16 fill:"#ffff" %}', pullRequestsUrl));
+            row.appendChild(createCountCell(repository.issues, '{% octicon issue-opened height: 16 fill:"#ffff" %}', issuesUrl));
+            row.appendChild(createReleaseCell(repository));
 
             repositoryData.appendChild(row);
         });

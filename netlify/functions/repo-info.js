@@ -3,14 +3,17 @@ require('dotenv').config();
 
 const githubApi = 'https://api.github.com';
 const userName = process.env.GITHUB_USERNAME;
-const accessToken = process.env.GITHUB_TOKEN;
+const accessToken = process.env.GITHUB_TOKEN || process.env.JEKYLL_GITHUB_TOKEN;
 
-// Set headers to include the access token for GitHub API requests
+// Base headers for GitHub API requests.
 const githubHeaders = {
-  Authorization: `Bearer ${accessToken}`,
   Accept: 'application/vnd.github+json',
   'X-GitHub-Api-Version': '2022-11-28'
 };
+
+if (accessToken) {
+  githubHeaders.Authorization = `Bearer ${accessToken}`;
+}
 
 // Set headers for the response, including CORS headers
 const responseHeaders = {

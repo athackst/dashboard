@@ -1,4 +1,12 @@
 theme: jekyll-theme-profile
 repository: athackst/dashboard
 url: https://dashboard.althack.dev
+baseurl: ""
 repo_info: true
+exclude:
+  - .netlify
+  - node_modules
+  - netlify
+  - vendor
+  - _site
+  - .jekyll-cache

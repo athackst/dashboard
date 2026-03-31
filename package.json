@@ -6,7 +6,7 @@
     "dev": "netlify dev"
   },
   "dependencies": {
-    "axios": "^1.13.6",
+    "axios": "^1.14.0",
     "dotenv": "^17.3.1"
   },
   "devDependencies": {

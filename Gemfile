@@ -6,7 +6,7 @@ gem 'bundler'
 
 group :jekyll_plugins do
   gem "jekyll-github-metadata"
-  gem "jekyll-octocons"
+  gem "jekyll-octicons"
 end
 
 group :development do

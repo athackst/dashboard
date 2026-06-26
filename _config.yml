@@ -4,6 +4,11 @@ url: https://dashboard.althack.dev
 baseurl: ""
 repo_info: true
 include_archived_repositories: "false"
+repository_sources:
+  - athackst
+  - althack
+  - owner: PrimerPages
+    type: org
 exclude:
   - .netlify
   - node_modules

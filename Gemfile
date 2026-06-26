@@ -5,7 +5,6 @@ gem 'jekyll-theme-profile'
 gem 'bundler'
 
 group :jekyll_plugins do
-  gem "jekyll-github-metadata"
   gem "jekyll-octicons"
 end
 

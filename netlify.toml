@@ -8,4 +8,3 @@
 
 [dev]
   targetPort = 4003
-  command = "bundle exec jekyll serve --incremental --port 4003"

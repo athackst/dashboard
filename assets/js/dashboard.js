@@ -111,6 +111,42 @@ function createReleaseCell(repository) {
     return cell;
 }
 
+function getRepositorySourceName(repository) {
+    if (repository.owner) {
+        return repository.owner;
+    }
+
+    if (repository.full_name && repository.full_name.includes('/')) {
+        return repository.full_name.split('/')[0];
+    }
+
+    return '';
+}
+
+function createRepositorySourceRow(sourceName) {
+    const row = document.createElement('tr');
+    row.classList.add('border-top', 'color-bg-subtle');
+
+    const heading = document.createElement('th');
+    heading.colSpan = 4;
+    heading.scope = 'rowgroup';
+    heading.classList.add('m-2', 'p-2', 'h4');
+
+    if (sourceName) {
+        const link = document.createElement('a');
+        link.href = `https://github.com/${sourceName}`;
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+        link.textContent = sourceName;
+        heading.appendChild(link);
+    } else {
+        heading.textContent = 'Unknown source';
+    }
+
+    row.appendChild(heading);
+    return row;
+}
+
 // Function to create an icon based on the latest commit status
 function getCommitStatusIcon(repository) {
     const status = repository.latest_commit_status;
@@ -143,6 +179,15 @@ repositories.style.display = 'none';
 
 repoInfoUrl.searchParams.set('includeArchived', String(includeArchived));
 
+try {
+    const repositorySources = repositories.dataset.repositorySources ? JSON.parse(repositories.dataset.repositorySources) : [];
+    repoInfoUrl.searchParams.set('repositorySources', JSON.stringify(repositorySources));
+} catch (error) {
+    const loadingDiv = document.getElementById('loading');
+    loadingDiv.innerHTML = '{% octicon cloud-offline height:24 %}<p>Error loading dashboard configuration.</p>';
+    throw error;
+}
+
 // Fetch repository data from the serverless function
 fetch(repoInfoUrl)
     .then(response => {
@@ -162,7 +207,15 @@ fetch(repoInfoUrl)
         // Show the table
         repositories.style.display = 'block';
 
+        let currentRepositorySource = null;
+
         data.forEach(repository => {
+            const repositorySource = getRepositorySourceName(repository);
+            if (repositorySource !== currentRepositorySource) {
+                repositoryData.appendChild(createRepositorySourceRow(repositorySource));
+                currentRepositorySource = repositorySource;
+            }
+
             const row = document.createElement('tr');
             row.classList.add('border-top');
             const pullRequestsUrl = `${repository.html_url}/pulls`;

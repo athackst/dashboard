@@ -47,6 +47,36 @@ const getPaginatedResults = async (url) => {
   }
 };
 
+const getFirstPageResults = async (url, params = {}) => {
+  const response = await axios.get(url, {
+    headers: githubHeaders,
+    params: {
+      per_page: 100,
+      page: 1,
+      ...params
+    }
+  });
+
+  return response.data;
+};
+
+const mapWithConcurrency = async (items, concurrency, mapper) => {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  });
+
+  await Promise.all(workers);
+
+  return results;
+};
+
 const getCombinedRunState = (checkRuns) => {
 
   const conclusionStates = {
@@ -155,7 +185,7 @@ const getLatestReleaseInfo = async (repoOwner, repoName) => {
   const releasesUrl = `${githubApi}/repos/${repoOwner}/${repoName}/releases`;
 
   try {
-    const releases = await getPaginatedResults(releasesUrl);
+    const releases = await getFirstPageResults(releasesUrl);
     const latestRelease = releases.find((release) => !release.draft);
     const latestDraftRelease = releases.find((release) => release.draft);
     console.log('Release info for', `${repoOwner}/${repoName}`, {
@@ -188,64 +218,130 @@ const shouldIncludeArchivedRepos = (event) => {
   return includeArchived === 'true';
 };
 
+const normalizeRepositorySource = (source) => {
+  if (typeof source === 'string') {
+    return {
+      owner: source.trim(),
+      type: 'user'
+    };
+  }
+
+  if (source && typeof source === 'object' && typeof source.owner === 'string') {
+    return {
+      owner: source.owner.trim(),
+      type: source.type === 'org' ? 'org' : 'user'
+    };
+  }
+
+  return null;
+};
+
+const getRepositorySources = (event) => {
+  const configuredSources = event.queryStringParameters && event.queryStringParameters.repositorySources;
+
+  if (!configuredSources) {
+    return userName ? [{ owner: userName, type: 'user' }] : [];
+  }
+
+  try {
+    const parsedSources = JSON.parse(configuredSources);
+    const sources = Array.isArray(parsedSources) ? parsedSources : [parsedSources];
+
+    return sources
+      .map(normalizeRepositorySource)
+      .filter((source) => source && source.owner);
+  } catch (error) {
+    console.warn('Failed to parse repositorySources config:', error.message);
+    return userName ? [{ owner: userName, type: 'user' }] : [];
+  }
+};
+
+const getReposUrl = (source) => {
+  if (source.type === 'org') {
+    return `${githubApi}/orgs/${source.owner}/repos?type=all&sort=updated`;
+  }
+
+  return `${githubApi}/users/${source.owner}/repos?type=owner&sort=updated`;
+};
+
+const getRepositoryInfo = async (repo, repoOwner) => {
+  try {
+    console.log(`Getting info for ${repo.full_name}`);
+
+    const prsUrl = `${githubApi}/repos/${repoOwner}/${repo.name}/pulls?state=open`;
+    const issuesUrl = `${githubApi}/repos/${repoOwner}/${repo.name}/issues?state=open`;
+
+    const [pullRequests, issues, commitStatus, releaseInfo] = await Promise.all([
+      getPaginatedResults(prsUrl),
+      getPaginatedResults(issuesUrl),
+      getLatestCommitStatus(repoOwner, repo.name, repo.default_branch),
+      getLatestReleaseInfo(repoOwner, repo.name)
+    ]);
+
+    const numPullRequests = pullRequests.length;
+    const numIssues = issues.filter((issue) => !issue.pull_request).length;
+
+    return {
+      name: repo.name,
+      full_name: repo.full_name,
+      owner: repoOwner,
+      html_url: repo.html_url,
+      archived: repo.archived,
+      issues: numIssues,
+      pull_requests: numPullRequests,
+      latest_release: releaseInfo.latestRelease,
+      latest_release_date: releaseInfo.latestReleaseDate,
+      latest_draft_release: releaseInfo.latestDraftRelease,
+      latest_commit_status: commitStatus.combinedStatus,
+      latest_commit_conclusion: commitStatus.combinedConclusion
+    };
+  } catch (error) {
+    console.error(`Failed to load repository info for ${repo.full_name}`, error.message);
+
+    return {
+      name: repo.name,
+      full_name: repo.full_name,
+      owner: repoOwner,
+      html_url: repo.html_url,
+      archived: repo.archived,
+      issues: 0,
+      pull_requests: 0,
+      latest_release: '',
+      latest_release_date: '',
+      latest_draft_release: '',
+      latest_commit_status: '',
+      latest_commit_conclusion: ''
+    };
+  }
+};
+
 exports.handler = async (event) => {
   try {
-    // Get the list of repositories for the user
-    const reposUrl = `${githubApi}/users/${userName}/repos?type=owner&sort=updated`;
     const includeArchived = shouldIncludeArchivedRepos(event);
-    const repos = await getPaginatedResults(reposUrl);
-    const filteredRepos = includeArchived ? repos : repos.filter((repo) => !repo.archived);
+    const repositorySources = getRepositorySources(event);
+
+    if (repositorySources.length === 0) {
+      throw new Error('No repository sources configured. Set repository_sources in _config.yml or GITHUB_USERNAME in the environment.');
+    }
+
+    const repoLists = await Promise.all(repositorySources.map(async (source) => {
+      const reposUrl = getReposUrl(source);
+      const repos = await getPaginatedResults(reposUrl);
+
+      return repos.map((repo) => ({ repo, owner: source.owner }));
+    }));
+
+    const filteredRepos = repoLists
+      .flat()
+      .map(({ repo, owner }) => ({ repo, owner }))
+      .filter(({ repo }) => includeArchived || !repo.archived);
 
     // Fetch repository information for each repository and tolerate partial failures.
-    const repoInfoPromises = filteredRepos.map(async (repo) => {
-      try {
-        console.log(`Getting info for ${repo.name}`);
-
-        const prsUrl = `${githubApi}/repos/${userName}/${repo.name}/pulls?state=open`;
-        const issuesUrl = `${githubApi}/repos/${userName}/${repo.name}/issues?state=open`;
-
-        const [pullRequests, issues, commitStatus, releaseInfo] = await Promise.all([
-          getPaginatedResults(prsUrl),
-          getPaginatedResults(issuesUrl),
-          getLatestCommitStatus(userName, repo.name, repo.default_branch),
-          getLatestReleaseInfo(userName, repo.name)
-        ]);
-
-        const numPullRequests = pullRequests.length;
-        const numIssues = issues.filter((issue) => !issue.pull_request).length;
-
-        return {
-          name: repo.name,
-          html_url: repo.html_url,
-          archived: repo.archived,
-          issues: numIssues,
-          pull_requests: numPullRequests,
-          latest_release: releaseInfo.latestRelease,
-          latest_release_date: releaseInfo.latestReleaseDate,
-          latest_draft_release: releaseInfo.latestDraftRelease,
-          latest_commit_status: commitStatus.combinedStatus,
-          latest_commit_conclusion: commitStatus.combinedConclusion
-        };
-      } catch (error) {
-        console.error(`Failed to load repository info for ${repo.name}`, error.message);
-
-        return {
-          name: repo.name,
-          html_url: repo.html_url,
-          archived: repo.archived,
-          issues: 0,
-          pull_requests: 0,
-          latest_release: '',
-          latest_release_date: '',
-          latest_draft_release: '',
-          latest_commit_status: '',
-          latest_commit_conclusion: ''
-        };
-      }
-    });
-
-    // Wait for all repository information promises to resolve
-    const repoInfo = await Promise.all(repoInfoPromises);
+    const repoInfo = await mapWithConcurrency(
+      filteredRepos,
+      4,
+      ({ repo, owner }) => getRepositoryInfo(repo, owner)
+    );
 
     return {
       statusCode: 200,

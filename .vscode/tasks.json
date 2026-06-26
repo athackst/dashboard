@@ -4,9 +4,22 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "serve",
+            "dependsOn": [
+                "netlify dev",
+                "jekyll: serve"
+            ],
+            "problemMatcher": []
+        },
+        {
             "label": "netlify dev",
             "type": "shell",
-            "command": "netlify dev",
+            "command": "netlify dev --no-open",
+            "options": {
+                "env": {
+                    "CHOKIDAR_USEPOLLING": "1"
+                }
+            },
             "presentation": {
                 "echo": true,
                 "reveal": "always",
@@ -14,7 +27,23 @@
                 "panel": "dedicated",
                 "showReuseMessage": true,
                 "clear": true
-            }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "jekyll: serve",
+            "type": "shell",
+            "command": "bundle exec jekyll serve --incremental --port 4003",
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": []
         },
         {
             "label": "bundle: install",
@@ -29,7 +58,8 @@
         {
             "label": "jekyll: build",
             "type": "shell",
-            "command": "bundle exec jekyll build"
+            "command": "bundle exec jekyll build",
+            "problemMatcher": []
         }
     ]
 }

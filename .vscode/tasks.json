@@ -5,36 +5,13 @@
     "tasks": [
         {
             "label": "serve",
-            "dependsOn": [
-                "netlify dev",
-                "jekyll: serve"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "netlify dev",
             "type": "shell",
-            "command": "netlify dev --no-open",
+            "command": "npm run dev",
             "options": {
                 "env": {
                     "CHOKIDAR_USEPOLLING": "1"
                 }
             },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "dedicated",
-                "showReuseMessage": true,
-                "clear": true
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "jekyll: serve",
-            "type": "shell",
-            "command": "bundle exec jekyll serve --incremental --port 4003",
-            "isBackground": true,
             "presentation": {
                 "echo": true,
                 "reveal": "always",

@@ -65,6 +65,6 @@ Recommended local versions:
 - Ruby `4.0.5`
 - Bundler `2.6.9`
 
-Next, run `npx netlify dev` to start the local development server.
+Next, run `npm run dev` to start the local development server.
 
 This will start the client server on [http://localhost:8888](http://localhost:8888)

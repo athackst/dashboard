@@ -12,8 +12,10 @@ repository_sources:
     type: org
 exclude:
   - .netlify
+  - .ruby-lsp
   - node_modules
   - netlify
   - vendor
   - _site
   - .jekyll-cache
+  - .git

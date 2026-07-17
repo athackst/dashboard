@@ -10,4 +10,9 @@
   node_bundler = "esbuild"
 
 [dev]
+  framework = "#custom"
+  command = "bundle exec jekyll serve --port 4003"
   targetPort = 4003
+  port = 8888
+  publish = "_site"
+  autoLaunch = false

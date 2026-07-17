@@ -3,6 +3,9 @@
   functions = "netlify/functions"
   publish = "_site"
 
+[build.environment]
+  MISE_RUBY_COMPILE = "false"
+
 [functions]
   node_bundler = "esbuild"
 

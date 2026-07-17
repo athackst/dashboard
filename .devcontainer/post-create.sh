@@ -12,8 +12,8 @@ if [ -f Gemfile.lock ] && grep "BUNDLED WITH" Gemfile.lock >/dev/null; then
 fi
 
 # If there's a Gemfile, then run `bundle install`
-# It's assumed that the Gemfile will install Jekyll too
-bundle config set --local path 'vendor/bundle'
+# BUNDLE_PATH is configured outside the workspace in devcontainer.json so file
+# watchers do not traverse installed gems.
 if [ -f Gemfile ]; then
     bundle install
 fi

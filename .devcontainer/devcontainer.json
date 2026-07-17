@@ -7,6 +7,9 @@
 	"features": {
 		"ghcr.io/devcontainers-extra/features/netlify-cli:1": {}
 	},
+	"containerEnv": {
+		"BUNDLE_PATH": "/home/vscode/.local/share/bundle"
+	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [
 		4000,

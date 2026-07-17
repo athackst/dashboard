@@ -1,0 +1,12 @@
+{
+  "files.watcherExclude": {
+    "**/.netlify/**": true,
+    "***/node_modules/**": true,
+    "**/.git/**": true,
+    "**/.cache/**": true,
+    "**/.bundle/**": true,
+    "**/vendor/**": true,
+    "**/tmp/**": true,
+    "**/.jekyll-cache/**": true
+  }
+}

@@ -61,8 +61,8 @@ Create a `.env` file to store secrets locally.
 
 Recommended local versions:
 
-- Node `22`
-- Ruby `3.4.9`
+- Node `24`
+- Ruby `4.0.5`
 - Bundler `2.6.9`
 
 Next, run `npx netlify dev` to start the local development server.

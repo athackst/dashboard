@@ -3,7 +3,7 @@
 {
 	"name": "Ubuntu",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/ruby:4-bookworm",
+	"image": "mcr.microsoft.com/devcontainers/ruby:3.4-bookworm",
 	"features": {
 		"ghcr.io/devcontainers-extra/features/netlify-cli:1": {}
 	},
@@ -14,7 +14,8 @@
 	"forwardPorts": [
 		4000,
 		4003,
-		8888
+		8888,
+		35732
 	],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": ".devcontainer/post-create.sh",

@@ -47,6 +47,18 @@ const getPaginatedResults = async (url) => {
   }
 };
 
+const getOptionalPaginatedResults = async (url) => {
+  try {
+    return await getPaginatedResults(url);
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return [];
+    }
+
+    throw error;
+  }
+};
+
 const getFirstPageResults = async (url, params = {}) => {
   const response = await axios.get(url, {
     headers: githubHeaders,
@@ -318,8 +330,8 @@ const getRepositoryInfo = async (repo, repoOwner) => {
     const issuesUrl = `${githubApi}/repos/${repoOwner}/${repo.name}/issues?state=open`;
 
     const [pullRequests, issues, commitStatus, releaseInfo] = await Promise.all([
-      getPaginatedResults(prsUrl),
-      getPaginatedResults(issuesUrl),
+      getOptionalPaginatedResults(prsUrl),
+      getOptionalPaginatedResults(issuesUrl),
       getLatestCommitStatus(repoOwner, repo.name, repo.default_branch),
       getLatestReleaseInfo(repoOwner, repo.name)
     ]);

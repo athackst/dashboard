@@ -77,9 +77,10 @@ const mapWithConcurrency = async (items, concurrency, mapper) => {
   return results;
 };
 
-const getCombinedRunState = (checkRuns) => {
+const getCombinedRunState = (checkRuns, workflowRuns = []) => {
 
   const conclusionStates = {
+    "startup_failure": 8,
     "failure": 7,
     "cancelled": 6,
     "timed_out": 5,
@@ -97,6 +98,11 @@ const getCombinedRunState = (checkRuns) => {
 
   // Create a map to store the latest check run for each name
   const latestCheckRunsMap = new Map();
+  const latestWorkflowRunsMap = new Map();
+
+  const getRunTimestamp = (run) => new Date(
+    run.run_started_at || run.started_at || run.created_at || 0
+  );
 
   // Iterate through each check run
   for (const checkRun of checkRuns) {
@@ -105,7 +111,7 @@ const getCombinedRunState = (checkRuns) => {
       // Get the stored check run for this name
       const storedCheckRun = latestCheckRunsMap.get(checkRun.name);
       // Compare timestamps to determine the latest one
-      if (new Date(checkRun.started_at) > new Date(storedCheckRun.started_at)) {
+      if (getRunTimestamp(checkRun) > getRunTimestamp(storedCheckRun)) {
         // Replace the stored check run with the current one if it's newer
         latestCheckRunsMap.set(checkRun.name, checkRun);
       }
@@ -115,7 +121,18 @@ const getCombinedRunState = (checkRuns) => {
     }
   }
 
-  // Now, find the combinedConclusion and combinedStatus from the latest check runs
+  // Startup failures do not create check runs, so retain the latest run for
+  // each workflow as a second source of commit-level status.
+  for (const workflowRun of workflowRuns) {
+    const workflowKey = workflowRun.workflow_id || workflowRun.path || workflowRun.name;
+    const storedWorkflowRun = latestWorkflowRunsMap.get(workflowKey);
+
+    if (!storedWorkflowRun || getRunTimestamp(workflowRun) > getRunTimestamp(storedWorkflowRun)) {
+      latestWorkflowRunsMap.set(workflowKey, workflowRun);
+    }
+  }
+
+  // Find the combined conclusion and status from the latest checks and workflows.
   let combinedConclusionKey = '';
   let combinedStatusKey = '';
   let combinedConclusionValue = 0;
@@ -140,6 +157,22 @@ const getCombinedRunState = (checkRuns) => {
     }
   }
 
+  for (const workflowRun of latestWorkflowRunsMap.values()) {
+    console.log('Latest state for workflow', workflowRun.name, 'is', workflowRun.conclusion, workflowRun.status);
+    const conclusionStateValue = conclusionStates[workflowRun.conclusion];
+    const statusStateValue = statusStates[workflowRun.status];
+
+    if (conclusionStateValue > combinedConclusionValue) {
+      combinedConclusionValue = conclusionStateValue;
+      combinedConclusionKey = workflowRun.conclusion;
+    }
+
+    if (statusStateValue > combinedStatusValue) {
+      combinedStatusValue = statusStateValue;
+      combinedStatusKey = workflowRun.status;
+    }
+  }
+
   return {
     combinedConclusion: combinedConclusionKey,
     combinedStatus: combinedStatusKey
@@ -160,14 +193,27 @@ const getLatestCommitStatus = async (repoOwner, repoName, branch = 'main') => {
     const latestCommitSha = commitsResponse.data.sha;
 
     const combinedStatusUrl = `${githubApi}/repos/${repoOwner}/${repoName}/commits/${latestCommitSha}/check-runs`;
-    const combinedStatusResponse = await axios.get(combinedStatusUrl, { headers: githubHeaders });
+    const workflowRunsUrl = `${githubApi}/repos/${repoOwner}/${repoName}/actions/runs`;
+    const [combinedStatusResponse, workflowRunsResponse] = await Promise.all([
+      axios.get(combinedStatusUrl, { headers: githubHeaders }),
+      axios.get(workflowRunsUrl, {
+        headers: githubHeaders,
+        params: {
+          head_sha: latestCommitSha,
+          per_page: 100
+        }
+      })
+    ]);
     console.log('Getting states for', repoName, branch, latestCommitSha);
 
-    const checkRunState = getCombinedRunState(combinedStatusResponse.data.check_runs);
+    const combinedRunState = getCombinedRunState(
+      combinedStatusResponse.data.check_runs,
+      workflowRunsResponse.data.workflow_runs
+    );
 
-    console.log('Combined state for', repoName, branch, latestCommitSha, 'is', checkRunState.combinedConclusion, checkRunState.combinedStatus);
+    console.log('Combined state for', repoName, branch, latestCommitSha, 'is', combinedRunState.combinedConclusion, combinedRunState.combinedStatus);
 
-    return checkRunState;
+    return combinedRunState;
   } catch (error) {
     if (error.response && (error.response.status === 404 || error.response.status === 409)) {
       console.warn(`Skipping commit status for ${repoOwner}/${repoName}: ${error.response.status}`);

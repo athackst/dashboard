@@ -154,7 +154,7 @@ function getCommitStatusIcon(repository) {
 
     if (status === 'completed' && conclusion === 'success') {
         return createIcon('{% octicon check height:16 %}', 'color-fg-success');
-    } else if (conclusion === 'failure') {
+    } else if (conclusion === 'failure' || conclusion === 'startup_failure') {
         return createIcon('{% octicon x height:16 %}', 'color-fg-danger');
     } else if (status === 'queued' || status === 'in_progress') {
         return createIcon('{% octicon stopwatch height:16 %}', 'color-fg-warning');

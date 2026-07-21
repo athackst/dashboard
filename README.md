@@ -1,23 +1,26 @@
 ![dashboard](/assets/dashboard.png)
 
-# Github Dashboard
+# GitHub Dashboard
 
 Live: [dashboard.althack.dev](https://dashboard.althack.dev)
 
-If you want your own copy to play around with, the quickest way to get it up and running is clicking the Deploy to Netlify button below. It will clone this repository into your own account, and deploy the site to Netlify
+To create your own dashboard, use the Deploy to Netlify button below. It creates
+a copy of the repository in your GitHub account and deploys the site to Netlify.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/athackst/dashboard)
 
-You will want to add or update your `_config.yml` file with information about your dashboard sources.
+Update `_config.yml` with the repositories to show:
 
 ```yaml
-theme: jekyll-theme-profile
+theme: jekyll-theme-primerpages
 repository: athackst/dashboard # The name of your repository
 url: https://dashboard.althack.dev # The url of your host
 include_archived_repositories: "false" # Optional: set to "true" to include archived repositories
 repository_sources:
-  - athackst # Default: show repositories owned by this user
-  - ros-controls # Optional: include additional users or organizations
+  - athackst # Show repositories owned by this user
+  - ros-controls # Include another user
+  - owner: PrimerPages # Include an organization
+    type: org
 ```
 
 `repository_sources` accepts either a simple list of owners, or objects if you want to be more explicit:
@@ -29,42 +32,109 @@ repository_sources:
     type: org
 ```
 
-You will need to set [environment variables](https://docs.netlify.com/configure-builds/environment-variables/) with your [Github Personal Access Token](https://github.com/settings/tokens) and username.
+If one configured source is temporarily unavailable, the dashboard continues
+loading repositories from the remaining sources. It reports an error only when
+every source fails.
 
-- `GITHUB_USERNAME`: Your github user name
-- `GITHUB_TOKEN`: Your github token
+Public repositories can be loaded without authentication, although GitHub
+applies a much lower API rate limit to unauthenticated requests. For a deployed
+dashboard, configure these [Netlify environment variables](https://docs.netlify.com/configure-builds/environment-variables/):
 
-These allow the dashboard to pull repository information (read-only public access required). A token is especially helpful if you add organization-owned repositories or need access to higher API limits.
+- `GITHUB_USERNAME`: Your GitHub username. Required when including private
+  repositories owned by your user account.
+- `GITHUB_TOKEN`: A [GitHub personal access token](https://github.com/settings/tokens).
+  Recommended for higher API limits and required for private repositories.
 
-## Setup
+The token needs read access only. Give a deployed dashboard token access only
+to repositories that are safe to display.
 
-To run the dashboard locally, you can use the [Visual Studo Code](https://code.visualstudio.com/) with the [Dev Container](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) plugin which includes everything you need to get started including the following:
+### Showing private repositories locally
 
-**System Requirements**
+To include private repositories owned by your user account when running the
+dashboard locally, add the following values to `.env`:
 
-- git
-- NodeJS
-- Ruby
+```dotenv
+GITHUB_USERNAME=your-github-user-name
+GITHUB_TOKEN=your-github-token
+INCLUDE_PRIVATE_REPOSITORIES=true
+```
 
-`cd` into your local copy of the repository and open it with code
+Keep `INCLUDE_PRIVATE_REPOSITORIES` in the local `.env` only; do not configure
+it in Netlify if the deployed dashboard should show public repositories only.
+The private repository query is used only for the `repository_sources` entry
+that exactly matches `GITHUB_USERNAME`.
+
+Organization sources return public repositories by default. They include
+private repositories accessible to the token only when
+`INCLUDE_PRIVATE_REPOSITORIES=true`.
+
+For a fine-grained personal access token, select **All repositories** or select
+each private repository that should appear. Grant these repository permissions
+as read-only:
+
+- Metadata (included automatically)
+- Contents
+- Issues
+- Pull requests
+- Actions
+
+Fine-grained personal access tokens do not expose the Checks permission in the
+GitHub token settings. When Checks access is unavailable, the dashboard uses
+GitHub Actions workflow runs for commit status instead.
+
+No write permissions are required. If the repositories belong to an
+organization, create the token for that resource owner and complete any
+required organization approval or SSO authorization. For a classic personal
+access token, grant the broader `repo` scope instead.
+
+If both `GITHUB_TOKEN` and `JEKYLL_GITHUB_TOKEN` are set, `GITHUB_TOKEN` takes
+precedence. Restart `npm run dev` after changing `.env`.
+
+## Development setup
+
+The recommended setup uses [Visual Studio Code](https://code.visualstudio.com/)
+with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
+The container provides the runtime tools and installs project dependencies.
+
+Host requirements:
+
+- Git
+- Docker
+- Visual Studio Code with the Dev Containers extension
+
+Open the repository in Visual Studio Code:
 
 ```bash
 cd dashboard
 code .
 ```
 
-Then `Ctrl+Shift+P` to open the command pallet and search for `Dev Containers: Reopen in Container`.
+Open the command palette and select **Dev Containers: Reopen in Container**.
+The post-create script installs Bundler, Ruby gems, and Node dependencies.
 
 ## Running locally
 
-Create a `.env` file to store secrets locally.
+Create a `.env` file for local credentials. The file is ignored by Git.
 
-Recommended local versions:
+When running without the devcontainer, use:
 
 - Node `24`
-- Ruby `4.0.5`
+- Ruby `3.4.10`
 - Bundler `2.6.9`
 
-Next, run `npm run dev` to start the local development server.
+Install dependencies when running without the devcontainer:
 
-This will start the client server on [http://localhost:8888](http://localhost:8888)
+```bash
+gem install bundler -v 2.6.9
+bundle install
+npm ci
+```
+
+Start the local development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:8888](http://localhost:8888). Netlify Dev proxies the
+Jekyll site and local serverless function through this port.

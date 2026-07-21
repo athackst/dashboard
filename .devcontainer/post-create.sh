@@ -12,8 +12,8 @@ if [ -f Gemfile.lock ] && grep "BUNDLED WITH" Gemfile.lock >/dev/null; then
 fi
 
 # If there's a Gemfile, then run `bundle install`
-# BUNDLE_PATH is configured outside the workspace in devcontainer.json so file
-# watchers do not traverse installed gems.
+# BUNDLE_APP_CONFIG and BUNDLE_PATH are configured outside the workspace in
+# devcontainer.json so local settings and installed gems stay out of the repo.
 if [ -f Gemfile ]; then
     bundle install
 fi

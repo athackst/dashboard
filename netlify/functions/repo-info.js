@@ -72,6 +72,30 @@ const getFirstPageResults = async (url, params = {}) => {
   return response.data;
 };
 
+const getOptionalCheckRuns = async (url) => {
+  try {
+    const response = await axios.get(url, { headers: githubHeaders });
+    return response.data.check_runs;
+  } catch (error) {
+    const response = error.response;
+    const acceptedPermissions = response && response.headers &&
+      response.headers['x-accepted-github-permissions'];
+    const rateLimitRemaining = response && response.headers &&
+      response.headers['x-ratelimit-remaining'];
+
+    if (response &&
+        response.status === 403 &&
+        rateLimitRemaining !== '0' &&
+        acceptedPermissions &&
+        acceptedPermissions.includes('checks=read')) {
+      console.warn('Skipping check runs because the token does not grant Checks access');
+      return [];
+    }
+
+    throw error;
+  }
+};
+
 const mapWithConcurrency = async (items, concurrency, mapper) => {
   const results = new Array(items.length);
   let nextIndex = 0;
@@ -206,8 +230,8 @@ const getLatestCommitStatus = async (repoOwner, repoName, branch = 'main') => {
 
     const combinedStatusUrl = `${githubApi}/repos/${repoOwner}/${repoName}/commits/${latestCommitSha}/check-runs`;
     const workflowRunsUrl = `${githubApi}/repos/${repoOwner}/${repoName}/actions/runs`;
-    const [combinedStatusResponse, workflowRunsResponse] = await Promise.all([
-      axios.get(combinedStatusUrl, { headers: githubHeaders }),
+    const [checkRuns, workflowRunsResponse] = await Promise.all([
+      getOptionalCheckRuns(combinedStatusUrl),
       axios.get(workflowRunsUrl, {
         headers: githubHeaders,
         params: {
@@ -219,7 +243,7 @@ const getLatestCommitStatus = async (repoOwner, repoName, branch = 'main') => {
     console.log('Getting states for', repoName, branch, latestCommitSha);
 
     const combinedRunState = getCombinedRunState(
-      combinedStatusResponse.data.check_runs,
+      checkRuns,
       workflowRunsResponse.data.workflow_runs
     );
 
@@ -314,9 +338,17 @@ const getRepositorySources = (event) => {
   }
 };
 
+const shouldIncludePrivateRepos = () =>
+  process.env.INCLUDE_PRIVATE_REPOSITORIES === 'true';
+
 const getReposUrl = (source) => {
   if (source.type === 'org') {
-    return `${githubApi}/orgs/${source.owner}/repos?type=all&sort=updated`;
+    const repositoryType = shouldIncludePrivateRepos() ? 'all' : 'public';
+    return `${githubApi}/orgs/${source.owner}/repos?type=${repositoryType}&sort=updated`;
+  }
+
+  if (shouldIncludePrivateRepos() && source.owner === userName) {
+    return `${githubApi}/user/repos?affiliation=owner&visibility=all&sort=updated`;
   }
 
   return `${githubApi}/users/${source.owner}/repos?type=owner&sort=updated`;
@@ -382,12 +414,28 @@ exports.handler = async (event) => {
       throw new Error('No repository sources configured. Set repository_sources in _config.yml or GITHUB_USERNAME in the environment.');
     }
 
-    const repoLists = await Promise.all(repositorySources.map(async (source) => {
+    const repoListResults = await Promise.allSettled(repositorySources.map(async (source) => {
       const reposUrl = getReposUrl(source);
       const repos = await getPaginatedResults(reposUrl);
 
       return repos.map((repo) => ({ repo, owner: source.owner }));
     }));
+
+    const failedSources = repoListResults
+      .map((result, index) => ({ result, source: repositorySources[index] }))
+      .filter(({ result }) => result.status === 'rejected');
+
+    for (const { result, source } of failedSources) {
+      console.warn(`Failed to load repository source ${source.owner}:`, result.reason.message);
+    }
+
+    if (failedSources.length === repoListResults.length) {
+      throw failedSources[0].result.reason;
+    }
+
+    const repoLists = repoListResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
 
     const filteredRepos = repoLists
       .flat()

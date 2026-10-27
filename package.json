@@ -10,6 +10,6 @@
     "dotenv": "^18.0.8"
   },
   "devDependencies": {
-    "netlify-cli": "27.13.0"
+    "netlify-cli": "27.14.2"
   }
 }

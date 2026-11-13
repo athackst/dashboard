@@ -139,6 +139,17 @@ The post-create script installs Bundler, Ruby gems, and Node dependencies.
 
 Create a `.env` file for local credentials. The file is ignored by Git.
 
+To start from the host using Docker and the [Dev Container CLI](https://github.com/devcontainers/cli):
+
+```bash
+npm install -g @devcontainers/cli
+npm run dev:container
+```
+
+The script brings up the devcontainer (reusing it if it already exists), then
+runs `npm run dev` inside it using `devcontainer exec`. Open
+[http://localhost:8888](http://localhost:8888). Press Ctrl+C to stop the server.
+
 When running without the devcontainer, use:
 
 - Node `24`

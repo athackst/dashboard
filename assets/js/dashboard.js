@@ -8,6 +8,8 @@ function createRepositoryNameCell(repository) {
 
     const repositoryLink = document.createElement('a');
     repositoryLink.href = repository.html_url;
+    repositoryLink.target = '_blank';
+    repositoryLink.rel = 'noreferrer';
     repositoryLink.textContent = repository.name;
     repositoryNameCell.appendChild(repositoryLink);
 
@@ -41,6 +43,43 @@ function createCountCell(count, icon, url) {
         link.appendChild(span);
         cell.appendChild(link);
     }
+    return cell;
+}
+
+function createSecurityCell(repository) {
+    const cell = document.createElement('td');
+    cell.classList.add('m-2', 'p-2');
+
+    if (!repository.security_alerts) {
+        cell.textContent = 'Not enabled';
+        cell.classList.add('color-fg-muted');
+        cell.title = 'Enable security alert reporting on the dashboard server.';
+        return cell;
+    }
+
+    const scanners = [
+        ['dependabot', 'Dependabot'],
+        ['code-scanning', 'Code scanning'],
+        ['secret-scanning', 'Secret scanning']
+    ];
+
+    for (const [scanner, label] of scanners) {
+        const link = document.createElement('a');
+        link.href = `${repository.html_url}/security/${scanner}`;
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+        link.classList.add('d-block');
+        const count = repository.security_alerts[scanner];
+        link.textContent = `${label}: ${Number.isInteger(count) ? `${count} open` : 'Unavailable'}`;
+        if (!Number.isInteger(count)) {
+            link.classList.add('color-fg-muted');
+            link.title = 'Scanning may be disabled, token access may be missing, or GitHub could not be reached.';
+        } else if (count > 0) {
+            link.classList.add('color-fg-danger');
+        }
+        cell.appendChild(link);
+    }
+
     return cell;
 }
 
@@ -123,12 +162,12 @@ function getRepositorySourceName(repository) {
     return '';
 }
 
-function createRepositorySourceRow(sourceName) {
+function createRepositorySourceRow(sourceName, includeSecurityAlerts = false) {
     const row = document.createElement('tr');
     row.classList.add('border-top', 'color-bg-subtle');
 
     const heading = document.createElement('th');
-    heading.colSpan = 4;
+    heading.colSpan = includeSecurityAlerts ? 5 : 4;
     heading.scope = 'rowgroup';
     heading.classList.add('m-2', 'p-2', 'h4');
 
@@ -207,12 +246,15 @@ fetch(repoInfoUrl)
         // Show the table
         repositories.style.display = 'block';
 
+        const includeSecurityAlerts = data.some(repository => repository.security_alerts != null);
+        document.getElementById('security-alerts-heading').hidden = !includeSecurityAlerts;
+
         let currentRepositorySource = null;
 
         data.forEach(repository => {
             const repositorySource = getRepositorySourceName(repository);
             if (repositorySource !== currentRepositorySource) {
-                repositoryData.appendChild(createRepositorySourceRow(repositorySource));
+                repositoryData.appendChild(createRepositorySourceRow(repositorySource, includeSecurityAlerts));
                 currentRepositorySource = repositorySource;
             }
 
@@ -225,6 +267,9 @@ fetch(repoInfoUrl)
             row.appendChild(createCountCell(repository.pull_requests, '{% octicon git-pull-request height: 16 fill:"#ffff" %}', pullRequestsUrl));
             row.appendChild(createCountCell(repository.issues, '{% octicon issue-opened height: 16 fill:"#ffff" %}', issuesUrl));
             row.appendChild(createReleaseCell(repository));
+            if (includeSecurityAlerts) {
+                row.appendChild(createSecurityCell(repository));
+            }
 
             repositoryData.appendChild(row);
         });

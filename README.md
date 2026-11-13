@@ -90,6 +90,29 @@ access token, grant the broader `repo` scope instead.
 If both `GITHUB_TOKEN` and `JEKYLL_GITHUB_TOKEN` are set, `GITHUB_TOKEN` takes
 precedence. Restart `npm run dev` after changing `.env`.
 
+## Showing security alerts
+
+Set `INCLUDE_SECURITY_ALERTS=true` in your local `.env` or Netlify environment
+to show open alert counts for Dependabot, code scanning, and secret scanning.
+The Security Alerts column is hidden when this option is disabled.
+Each count links to the repository's alerts on GitHub. Restart the local server
+or redeploy after changing environment variables.
+
+In addition to the permissions above, grant your fine-grained `GITHUB_TOKEN`
+these repository permissions as read-only:
+
+- [Dependabot alerts](https://docs.github.com/en/rest/dependabot/alerts#list-dependabot-alerts-for-a-repository)
+- [Code scanning alerts](https://docs.github.com/en/rest/code-scanning/code-scanning#list-code-scanning-alerts-for-a-repository)
+- [Secret scanning alerts](https://docs.github.com/en/rest/secret-scanning/secret-scanning#list-secret-scanning-alerts-for-a-repository)
+
+The token's user must also have access to those alerts on GitHub. Repositories
+with scanning disabled, missing token access, or failed API requests display
+`Unavailable`, rather than zero alerts. Each scanner is fetched independently.
+
+Reporting is off by default. Enabling it publishes counts through the dashboard's
+public API, including for private repositories if those are included. Alert
+details and detected secret values are never returned to the browser.
+
 ## Development setup
 
 The recommended setup uses [Visual Studio Code](https://code.visualstudio.com/)

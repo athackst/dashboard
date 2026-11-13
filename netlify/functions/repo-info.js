@@ -59,6 +59,40 @@ const getOptionalPaginatedResults = async (url) => {
   }
 };
 
+const getSecurityAlerts = async (repoOwner, repoName) => {
+  if (process.env.INCLUDE_SECURITY_ALERTS !== 'true') {
+    return null;
+  }
+
+  const scanners = ['dependabot', 'code-scanning', 'secret-scanning'];
+  const counts = await Promise.all(scanners.map(async (scanner) => {
+    if (!accessToken) {
+      return [scanner, null];
+    }
+
+    try {
+      // Keep alert details (including any detected secrets) on the server.
+      let url = `${githubApi}/repos/${repoOwner}/${repoName}/${scanner}/alerts?state=open&per_page=100`;
+      let count = 0;
+      // Dependabot uses cursor pagination and rejects the page parameter.
+      // Following GitHub's next link also works for the other scanners.
+      while (url) {
+        const response = await axios.get(url, { headers: githubHeaders });
+        count += response.data.length;
+        url = response.headers?.link?.match(/<([^>]+)>;\s*rel="next"/)?.[1];
+      }
+      return [scanner, count];
+    } catch (error) {
+      // Missing permissions, disabled scanning, and API failures are unknown,
+      // rather than evidence that a repository has no alerts.
+      console.warn(`Security alert count unavailable for ${repoOwner}/${repoName} (${scanner}): ${error.response?.status || 'request failed'}`);
+      return [scanner, null];
+    }
+  }));
+
+  return Object.fromEntries(counts);
+};
+
 const getFirstPageResults = async (url, params = {}) => {
   const response = await axios.get(url, {
     headers: githubHeaders,
@@ -361,11 +395,12 @@ const getRepositoryInfo = async (repo, repoOwner) => {
     const prsUrl = `${githubApi}/repos/${repoOwner}/${repo.name}/pulls?state=open`;
     const issuesUrl = `${githubApi}/repos/${repoOwner}/${repo.name}/issues?state=open`;
 
-    const [pullRequests, issues, commitStatus, releaseInfo] = await Promise.all([
+    const [pullRequests, issues, commitStatus, releaseInfo, securityAlerts] = await Promise.all([
       getOptionalPaginatedResults(prsUrl),
       getOptionalPaginatedResults(issuesUrl),
       getLatestCommitStatus(repoOwner, repo.name, repo.default_branch),
-      getLatestReleaseInfo(repoOwner, repo.name)
+      getLatestReleaseInfo(repoOwner, repo.name),
+      getSecurityAlerts(repoOwner, repo.name)
     ]);
 
     const numPullRequests = pullRequests.length;
@@ -379,6 +414,7 @@ const getRepositoryInfo = async (repo, repoOwner) => {
       archived: repo.archived,
       issues: numIssues,
       pull_requests: numPullRequests,
+      security_alerts: securityAlerts,
       latest_release: releaseInfo.latestRelease,
       latest_release_date: releaseInfo.latestReleaseDate,
       latest_draft_release: releaseInfo.latestDraftRelease,
@@ -396,6 +432,9 @@ const getRepositoryInfo = async (repo, repoOwner) => {
       archived: repo.archived,
       issues: 0,
       pull_requests: 0,
+      security_alerts: process.env.INCLUDE_SECURITY_ALERTS === 'true'
+        ? { dependabot: null, 'code-scanning': null, 'secret-scanning': null }
+        : null,
       latest_release: '',
       latest_release_date: '',
       latest_draft_release: '',

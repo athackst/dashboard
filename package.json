@@ -3,7 +3,8 @@
     "node": "24"
   },
   "scripts": {
-    "dev": "netlify dev"
+    "dev": "netlify dev",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "axios": "^1.21.0",
